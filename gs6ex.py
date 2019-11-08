@@ -1,24 +1,25 @@
 import re
 from datetime import datetime as dt, timezone as tz
 import logging
+import shelve
 
 import discord.ext.commands as cmd
 from discord.ext.commands.view import StringView
 
 from .common import *
 from .module import get_module_class
-from . import persistence
 
 log = logging.getLogger('bot')
 
 
 class Gs6Ex(cmd.Bot):
-    def __init__(self, profile):
+    def __init__(self, profile, config_dir):
         super().__init__(command_prefix='', description='', pm_help=False, help_attrs={})
-
         super().remove_command('help')
 
-        conf = persistence.get_module_shelf('core')
+        self.config_dir = config_dir
+        self.opened_shelves = {}
+        conf = self.get_shelf('core')
 
         if 'version' in conf and conf['version'] != 1:
             raise NotImplementedError(f'Main config is using an unsupported version: {main_shelf["version"]}')
@@ -42,6 +43,26 @@ class Gs6Ex(cmd.Bot):
         # The core module should always be loaded, so we can use eval to repair misconfigurations
         for module in {'core', *self.conf['active_modules']}:
             self.load_module(module)
+
+    def get_shelf(self, mod_name):
+        if mod_name in self.opened_shelves:
+            return self.opened_shelves[mod_name]
+
+        s = shelve.open(str(self.config_dir / mod_name), writeback=True)
+
+        self.opened_shelves[mod_name] = s
+        return s
+
+    def close_shelf(self, mod_name):
+        if mod_name in self.opened_shelves:
+            self.opened_shelves[mod_name].close()
+            del self.opened_shelves[mod_name]
+
+    def close_all_shelves(self):
+        for s in self.opened_shelves.values():
+            s.close()
+
+        self.opened_shelves.clear()
 
     def load_module(self, name, persistent=True):
         C = get_module_class(name)

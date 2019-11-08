@@ -6,8 +6,6 @@ import sys
 
 from discord.ext import commands as cmd
 
-from . import persistence
-
 # Currently, the module system is just a wrapper over the
 # cog and extension system provided by the commands library, with some minor extensions.
 # In the future, it might be better to implement this from the ground up,
@@ -26,7 +24,7 @@ parent_module = __name__.rsplit('.', maxsplit=1)[0]
 class Module(cmd.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.conf = persistence.get_module_shelf(self.name)
+        self.conf = bot.get_shelf(self.name)
         self.log = logging.getLogger(f'bot.{self.name}')
         self._on_load()
 
