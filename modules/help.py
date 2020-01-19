@@ -20,7 +20,7 @@ class HelpModule(mod.Module):
         commands.sort(key=lambda c: c.name != 'help')
 
         embed = Embed(colour=getattr(ctx.me, 'color', 0), description='\n'.join(cmd_str(c) for c in commands))
-        embed.set_author(name="NearlyOnTime", url="https://github.com/max-kamps/nearly-on-time", icon_url=ctx.me.avatar_url)
+        embed.set_author(name="NearlyOnTime", icon_url=ctx.me.avatar_url)
 
         await ctx.send(embed=embed)
 
@@ -32,6 +32,6 @@ class HelpModule(mod.Module):
         commands.sort(key=lambda c: c.name != 'help')
 
         embed = Embed(colour=getattr(ctx.me, 'color', 0), description='\n'.join(cmd_str_debug(c) for c in commands))
-        embed.set_author(name="NearlyOnTime", url="https://github.com/max-kamps/nearly-on-time", icon_url=ctx.me.avatar_url)
+        embed.set_author(name="NearlyOnTime", icon_url=ctx.me.avatar_url)
 
         await ctx.send(embed=embed)
