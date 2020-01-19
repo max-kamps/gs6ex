@@ -1,5 +1,12 @@
-__pycache__
 credentials.json
 .config
+
 .DS_Store
 *.sublime-*
+
+__pycache__
+bin
+include
+lib
+lib64
+pyvenv.cfg
