@@ -13,13 +13,6 @@ class Obj(dict):
     __delattr__ = dict.__delitem__
 
 
-def is_superuser():
-    async def pred(ctx):
-        return await ctx.bot.is_owner(ctx.author) or ctx.message.author.id in ctx.bot.conf['superusers']
-
-    return cmd.check(pred)
-
-
 # I know there is a pagination function included in Discord, but that had some bugs and
 # strange design choices, so I wrote my own.
 # If all of those are fixed, we should probably use theirs instead.

@@ -71,3 +71,10 @@ def get_module_class(name):
     # inspect.getmembers returns (name, member) tuples.
     # We only want the member, not the name.
     return module_classes[0][1]
+
+
+def is_superuser():
+    async def pred(ctx):
+        return await ctx.bot.is_owner(ctx.author) or ctx.message.author.id in ctx.bot.conf['superusers']
+
+    return cmd.check(pred)
