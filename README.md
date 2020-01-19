@@ -27,6 +27,7 @@ $ sudo useradd -m gs6ex
 $ sudo passwd -l gs6ex
 $ sudo loginctl enable-linger gs6ex
 $ sudo su gs6ex
+$ bash
 $ cd ~
 
 # Install Gs6Ex
@@ -35,7 +36,7 @@ $ cd gs6ex
 
 # Add any module sets you want to use as submodules
 # This is just an example, use your own git repo
-$ git submodules add https://github.com/max-kamps/helper modules/helper
+$ git submodule add https://github.com/max-kamps/helper modules/helper
 
 # Create virtualenv, install dependencies
 $ python3 -m venv .
@@ -72,7 +73,7 @@ $ cd gs6ex
 
 # Add any module sets you want to use as submodules
 # This is just an example, use your own git repo
-$ git submodules add https://github.com/max-kamps/helper modules/helper
+$ git submodule add https://github.com/max-kamps/helper modules/helper
 
 # Alternatively, you can also symlink any module sets you're developing locally
 $ ln -s ../helper modules/helper
