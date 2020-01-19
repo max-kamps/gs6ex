@@ -1,0 +1,14 @@
+[Unit]
+Description=gs6ex@%I
+After=default.target
+
+[Service]
+WorkingDirectory=/home/gs6ex/
+ExecStart=gs6ex/bin/python -um gs6ex %I
+Type=idle
+Restart=always
+RestartSec=15
+TimeoutStopSec=10
+
+[Install]
+WantedBy=default.target

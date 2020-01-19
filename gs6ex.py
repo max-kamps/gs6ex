@@ -13,7 +13,7 @@ log = logging.getLogger('bot')
 
 
 class Gs6Ex(cmd.Bot):
-    def __init__(self, profile, config_dir):
+    def __init__(self, profile_name, config_dir):
         super().__init__(command_prefix='', description='', pm_help=False, help_attrs={})
         super().remove_command('help')
 
@@ -29,8 +29,9 @@ class Gs6Ex(cmd.Bot):
         conf.setdefault('active_modules', set())
         conf.sync()
 
-        self.profile = profile
         self.conf = conf
+        self.profile_name = profile_name
+
         self.first_ready = None
         self.last_ready = None
         self.last_resume = None
@@ -79,6 +80,8 @@ class Gs6Ex(cmd.Bot):
             self.conf.sync()
 
     def unload_module(self, name, persistent=True):
+        if name == 'core': return
+
         self.remove_cog(name)
         if name in self.modules:
             del self.modules[name]
