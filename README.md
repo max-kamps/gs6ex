@@ -59,8 +59,8 @@ $ export XDG_RUNTIME_DIR=/run/user/`id -u`  # Work around some weird XDG issues
 $ systemctl --user enable gs6ex@main
 $ systemctl --user start gs6ex@main
 
-# We're done, exit su
-$ exit
+# We're done, exit bash and su
+$ exit; exit
 ```
 
 Alternatively, you can install the bot without creating a service.
