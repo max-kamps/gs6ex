@@ -8,6 +8,7 @@ import gs6ex.module as mod
 class SystemModule(mod.Module):
     def on_load(self):
         self.conf.setdefault('systemd_service_name', 'gs6ex')
+        self.conf.sync()
 
     @mod.command(name='update', hidden=True)
     @mod.is_superuser()
@@ -29,4 +30,5 @@ class SystemModule(mod.Module):
             # the program anyway.
             # I tried using subprocess here, but it didn't work.
             # ~hmry (2019-10-21, 02:12)
-            os.system(f'systemctl --user restart {quote(f"{self.conf.systemd_service_name}@{self.bot.profile_name}")}')
+            systemd_name = f'{self.conf["systemd_service_name"]}@{self.bot.profile_name}'
+            os.system(f'systemctl --user restart {quote(systemd_name)}')
