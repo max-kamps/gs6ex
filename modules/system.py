@@ -13,7 +13,8 @@ class SystemModule(mod.Module):
     @mod.command(name='update', hidden=True)
     @mod.is_superuser()
     async def update_cmd(self, ctx):
-        await ctx.add_success_reaction(not subp.call(['git', 'pull', '--recurse-submodules']))
+        failure = subp.call(['git', 'pull']) or subp.call(['git', 'submodule', 'update', '--recursive', '--remote'])
+        await ctx.add_success_reaction(not failure)
 
     @mod.command(name='restart', hidden=True)
     @mod.is_superuser()
