@@ -41,10 +41,6 @@ class Gs6Ex(cmd.Bot):
 
         self.modules = {}
 
-        # The core module should always be loaded, so we can use eval to repair misconfigurations
-        for module in {'core', *self.conf['active_modules']}:
-            self.load_module(module)
-
     def get_shelf(self, mod_name):
         if mod_name in self.opened_shelves:
             return self.opened_shelves[mod_name]
@@ -101,6 +97,10 @@ class Gs6Ex(cmd.Bot):
 
         self.command_regex = re.compile(fr'(?s)^<@!?{self.user.id}>(.*)$')
         self.command_dms_regex = re.compile(fr'(?s)^(?:<@!?{self.user.id}>)?(.*)$')
+
+        # The core module should always be loaded, so we can use eval to repair misconfigurations
+        for module in {'core', *self.conf['active_modules']}:
+            self.load_module(module)
 
     async def on_resumed(self):
         log.warning(f'Resumed')
