@@ -16,6 +16,8 @@ from discord.ext import commands as cmd
 command = cmd.command
 group = cmd.group
 
+CheckFailure = cmd.CheckFailure
+
 loop = asyncio.get_event_loop()
 
 parent_module = __name__.rsplit('.', maxsplit=1)[0]
