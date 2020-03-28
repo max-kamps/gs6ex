@@ -4,7 +4,7 @@ After=default.target
 
 [Service]
 WorkingDirectory=/home/gs6ex/
-ExecStart=/home/gs6ex/gs6ex/bin/python -um gs6ex %I
+ExecStart=/home/gs6ex/gs6ex/bin/python3.8 -um gs6ex %I
 Type=idle
 Restart=always
 RestartSec=15
