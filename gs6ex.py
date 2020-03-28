@@ -1,3 +1,4 @@
+import asyncio
 import re
 from datetime import datetime as dt, timezone as tz
 import logging
@@ -10,6 +11,7 @@ from .common import *
 from .module import get_module_class
 
 log = logging.getLogger('bot')
+asyncio.get_event_loop().set_exception_handler(lambda loop, ctx: log.error(ctx['message'], exc_info=ctx.get('exception')))
 
 
 class Gs6Ex(cmd.Bot):
