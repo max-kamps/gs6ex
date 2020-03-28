@@ -3,7 +3,9 @@ import importlib
 import inspect
 import logging
 import sys
+from datetime import datetime as dt, timezone as tz
 
+from discord.backoff import ExponentialBackoff
 from discord.ext import commands as cmd
 
 # Currently, the module system is just a wrapper over the
@@ -38,6 +40,7 @@ class Module(cmd.Cog):
         self.bot = bot
         self.conf = bot.get_shelf(self.name)
         self.log = logging.getLogger(f'bot.{self.name}')
+        self._scheduled_tasks = set()
         self._on_load()
 
     def _on_load(self):
@@ -48,6 +51,10 @@ class Module(cmd.Cog):
 
     def _on_unload(self):
         self.conf.sync()
+        
+        for task in self._scheduled_tasks:
+            task.cancel()
+
         if hasattr(self, 'on_unload'):
             self.on_unload()
 
@@ -58,6 +65,49 @@ class Module(cmd.Cog):
 
         cls.cog_unload = cls._on_unload
 
+    def schedule_task(self, coro, *, in_delta=None, at_datetime=None):
+        if in_delta is not None:
+            in_seconds = in_delta.total_seconds()
+
+        elif at_datetime is not None:
+            in_seconds = (at_datetime - dt.now(tz.utc)).total_seconds()
+
+        else:
+            raise TypeError('Must supply either in_delta or at_datetime')
+
+        async def scheduled_closure():
+            try:
+                await asyncio.sleep(in_seconds)
+                await coro
+
+            finally:
+                self._scheduled_tasks.discard(asyncio.current_task())
+
+        task = asyncio.create_task(scheduled_closure())
+        self._scheduled_tasks.add(task)
+        return task
+
+    def schedule_repeated(self, coro, *args, every_delta):
+        async def scheduled_closure():
+            try:
+                while True:
+                    try:
+                        await coro(*args)
+
+                    except asyncio.CancelledError:
+                        return
+
+                    except Exception:
+                        self.log.error('Exception in repeated schedule:', exc_info=True)
+
+                    await asyncio.sleep(every_delta.total_seconds())
+
+            finally:
+                self._scheduled_tasks.discard(asyncio.current_task())
+
+        task = asyncio.create_task(scheduled_closure())
+        self._scheduled_tasks.add(task)
+        return task
 
 def get_module_class(name):
     # First we (re)load the python module containing the module class
