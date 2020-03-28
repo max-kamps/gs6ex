@@ -18,9 +18,19 @@ group = cmd.group
 
 CheckFailure = cmd.CheckFailure
 
-loop = asyncio.get_event_loop()
-
 parent_module = __name__.rsplit('.', maxsplit=1)[0]
+
+
+def get_logger():
+    calling_frame = inspect.stack()[1].frame
+    module_name = inspect.getmodule(calling_frame).__name__
+
+    prefix = f'{parent_module}.modules.'
+    if module_name.startswith(prefix):
+        module_name = module_name[len(prefix):]
+
+    print(f'bot.{module_name}')
+    return logging.getLogger(f'bot.{module_name}')
 
 
 class Module(cmd.Cog):
