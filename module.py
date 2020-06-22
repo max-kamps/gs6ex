@@ -3,6 +3,7 @@ import importlib
 import inspect
 import logging
 import sys
+import shelve
 from datetime import datetime as dt, timezone as tz
 
 from discord.backoff import ExponentialBackoff
@@ -38,10 +39,14 @@ def get_logger():
 class Module(cmd.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.conf = bot.get_shelf(self.name)
+        self.conf = shelve.open(str(bot.config_dir / self.name), writeback=True)
         self.log = logging.getLogger(f'bot.{self.name}')
         self._scheduled_tasks = set()
         self._on_load()
+
+    def __del__(self):
+        # Ensure shelf is definitely closed
+        self.conf.close()
 
     def _on_load(self):
         if hasattr(self, 'on_load'):
@@ -50,13 +55,13 @@ class Module(cmd.Cog):
         self.log.info('Loaded!')
 
     def _on_unload(self):
-        self.conf.sync()
-        
         for task in self._scheduled_tasks:
             task.cancel()
 
         if hasattr(self, 'on_unload'):
             self.on_unload()
+
+        self.conf.close()
 
         self.log.info('Unloaded!')
 
@@ -135,8 +140,8 @@ def get_module_class(name):
     return module_classes[0][1]
 
 
-def is_superuser():
+def is_owner():
     async def pred(ctx):
-        return await ctx.bot.is_owner(ctx.author) or ctx.message.author.id in ctx.bot.conf['superusers']
+        return await ctx.bot.is_owner(ctx.author)
 
     return cmd.check(pred)

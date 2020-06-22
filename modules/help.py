@@ -25,7 +25,7 @@ class HelpModule(mod.Module):
         await ctx.send(embed=embed)
 
     @mod.command(name='_help', hidden=True, usage='_help', description='Show debug information about all commands')
-    @mod.is_superuser()
+    @mod.is_owner()
     async def _help_cmd(self, ctx):
         commands = [c for c in ctx.bot.commands]
         commands.sort(key=lambda c: c.name)

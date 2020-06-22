@@ -33,7 +33,7 @@ class CoreModule(mod.Module):
         return env
 
     @mod.command(name='eval', hidden=True, usage='eval <code>', description='Evaluate a piece of python code')
-    @mod.is_superuser()
+    @mod.is_owner()
     async def eval_cmd(self, ctx, *, code: str):
         code = clean_code(code)
 
@@ -52,7 +52,7 @@ class CoreModule(mod.Module):
             await ctx.send_paginated(error)
 
     @mod.command(name='exec', hidden=True, usage='exec <code>', description='Execute a piece of python code')
-    @mod.is_superuser()
+    @mod.is_owner()
     async def exec_cmd(self, ctx, *, code: str):
         code = clean_code(code)
 

@@ -51,4 +51,3 @@ with logger('discord', logging.WARNING), logger('bot', logging.INFO) as log:
 
     bot = gs6ex.Gs6Ex(chosen_profile, config_dir)
     bot.run(credentials[chosen_profile])
-    bot.close_all_shelves()

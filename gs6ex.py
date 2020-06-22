@@ -21,13 +21,8 @@ class Gs6Ex(cmd.Bot):
 
         self.config_dir = config_dir
         self.opened_shelves = {}
-        conf = self.get_shelf('core')
+        conf = shelve.open(str(self.config_dir / 'gs6ex'), writeback=True)
 
-        if 'version' in conf and conf['version'] != 1:
-            raise NotImplementedError(f'Main config is using an unsupported version: {main_shelf["version"]}')
-
-        conf.setdefault('version', 1)
-        conf.setdefault('superusers', [])
         conf.setdefault('active_modules', set())
         conf.sync()
 
@@ -43,31 +38,15 @@ class Gs6Ex(cmd.Bot):
 
         self.modules = {}
 
-    def get_shelf(self, mod_name):
-        if mod_name in self.opened_shelves:
-            return self.opened_shelves[mod_name]
-
-        s = shelve.open(str(self.config_dir / mod_name), writeback=True)
-
-        self.opened_shelves[mod_name] = s
-        return s
-
-    def close_shelf(self, mod_name):
-        if mod_name in self.opened_shelves:
-            self.opened_shelves[mod_name].close()
-            del self.opened_shelves[mod_name]
-
-    def close_all_shelves(self):
-        for s in self.opened_shelves.values():
-            s.close()
-
-        self.opened_shelves.clear()
+    def __del__(self):
+        # Ensure shelf is closed
+        self.conf.close()
 
     def load_module(self, name, persistent=True):
-        C = get_module_class(name)
-
         if name in self.modules:
-            self.remove_cog(name)
+            self.unload_module(name, persistent=False)
+        
+        C = get_module_class(name)
 
         instance = C(self)
         self.modules[name] = instance
@@ -78,8 +57,6 @@ class Gs6Ex(cmd.Bot):
             self.conf.sync()
 
     def unload_module(self, name, persistent=True):
-        if name == 'core': return
-
         self.remove_cog(name)
         if name in self.modules:
             del self.modules[name]
@@ -143,5 +120,7 @@ class Gs6Ex(cmd.Bot):
         log.info('Closing...')
         for mod in self.modules.copy():
             self.unload_module(mod, persistent=False)
-        
+
+        self.conf.close()
+
         await super().close()

@@ -11,13 +11,13 @@ class SystemModule(mod.Module):
         self.conf.sync()
 
     @mod.command(name='update', hidden=True)
-    @mod.is_superuser()
+    @mod.is_owner()
     async def update_cmd(self, ctx):
         failure = subp.call(['git', 'pull']) or subp.call(['git', 'submodule', 'update', '--recursive', '--remote'])
         await ctx.add_success_reaction(not failure)
 
     @mod.command(name='restart', hidden=True)
-    @mod.is_superuser()
+    @mod.is_owner()
     async def restart_cmd(self, ctx):
         service = self.conf['systemd_service_name']
         

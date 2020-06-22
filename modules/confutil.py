@@ -6,12 +6,12 @@ from .. import module as mod
 
 class ConfUtilModule(mod.Module):
     @mod.group(name='config', hidden=True, invoke_without_command=True)
-    @mod.is_superuser()
+    @mod.is_owner()
     async def config_cmd(self, ctx):
         pass
 
     @config_cmd.command(name='get')
-    @mod.is_superuser()
+    @mod.is_owner()
     async def get_cmd(self, ctx, module: str):
         if module not in self.bot.modules:
             await ctx.add_success_reaction(False)
@@ -21,7 +21,7 @@ class ConfUtilModule(mod.Module):
         await ctx.send_paginated(f'{{\n{NEW_LINE.join(f"    {k!r}: {v!r}," for k, v in self.bot.modules[module].conf.items())}\n}}')
 
     @config_cmd.command(name='set')
-    @mod.is_superuser()
+    @mod.is_owner()
     async def set_cmd(self, ctx, module: str, key: str, *, value):
         if module not in self.bot.modules:
             await ctx.add_success_reaction(False)
