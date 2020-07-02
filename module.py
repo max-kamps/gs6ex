@@ -32,7 +32,6 @@ def get_logger():
     if module_name.startswith(prefix):
         module_name = module_name[len(prefix):]
 
-    print(f'bot.{module_name}')
     return logging.getLogger(f'bot.{module_name}')
 
 
