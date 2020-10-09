@@ -69,17 +69,16 @@ class Gs6Ex(cmd.Bot):
         log.info(f'Ready with Username {self.user.name!r}, ID {self.user.id!r}')
 
         now = dt.now(tz.utc)
-        if self.first_ready is None:
-            self.first_ready = now
-
         self.last_ready = now
 
         self.command_regex = re.compile(fr'(?s)^<@!?{self.user.id}>(.*)$')
         self.command_dms_regex = re.compile(fr'(?s)^(?:<@!?{self.user.id}>)?(.*)$')
 
-        # The core module should always be loaded, so we can use eval to repair misconfigurations
-        for module in {'core', *self.conf['active_modules']}:
-            self.load_module(module)
+        if self.first_ready is None:
+            self.first_ready = now
+            # The core module should always be loaded, so we can use eval to repair misconfigurations
+            for module in {'core', *self.conf['active_modules']}:
+                self.load_module(module)
 
     async def on_resumed(self):
         log.warning(f'Resumed')
