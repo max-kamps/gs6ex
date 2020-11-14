@@ -5,6 +5,7 @@ from datetime import datetime as dt, timezone as tz
 import discord
 
 import gs6ex.module as mod
+from . import compress
 
 
 def clean_code(content):
@@ -55,6 +56,22 @@ class CoreModule(mod.Module):
     @mod.is_owner()
     async def exec_cmd(self, ctx, *, code: str):
         code = clean_code(code)
+
+        env = self.create_env(ctx)
+        code = f'import asyncio\nasync def _func():\n{textwrap.indent(code, "    ")}'
+
+        exec(code, env)
+
+        result = await env['_func']()
+
+        if result is not None:
+            await ctx.send_paginated(result)
+
+    @mod.command(name='execc', hidden=True, usage='execc <code>', description='Execute a compressed piece of python code')
+    @mod.is_owner()
+    async def execc_cmd(self, ctx, *, code: str):
+        code = clean_code(code)
+        code = compress.base32768_decode(code)
 
         env = self.create_env(ctx)
         code = f'import asyncio\nasync def _func():\n{textwrap.indent(code, "    ")}'
