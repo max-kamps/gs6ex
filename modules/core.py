@@ -71,7 +71,7 @@ class CoreModule(mod.Module):
     @mod.is_owner()
     async def execc_cmd(self, ctx, *, code: str):
         code = clean_code(code)
-        code = compress.base32768_decode(code)
+        code = compress.base32768_decode_bytes(code).decode()
 
         env = self.create_env(ctx)
         code = f'import asyncio\nasync def _func():\n{textwrap.indent(code, "    ")}'

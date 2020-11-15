@@ -31,7 +31,7 @@ for num_of_bits, ranges in char_ranges.items():
         decode_lut[char] = (num_of_bits, z)
 
 
-def base32768_encode_bytes(data):
+def _base32768_encode_raw(data):
     digits = []
 
     bit_buffer = 0
@@ -53,7 +53,7 @@ def base32768_encode_bytes(data):
 
     return ''.join(digits)
 
-def base32768_decode_bytes(data):
+def _base32768_decode_raw(data):
     output = bytearray()
 
     bit_buffer = 0
@@ -78,12 +78,20 @@ def base32768_decode_bytes(data):
 
 lzma_filter_chain = [{'id': lzma.FILTER_LZMA2, 'preset': 9}]
 
-def base32768_encode(obj):
+def base32768_encode_bytes(data):
+    compressed = lzma.compress(data, format=lzma.FORMAT_RAW, filters=lzma_filter_chain)
+    return _base32768_encode_raw(compressed)
+
+def base32768_decode_bytes(data):
+    decoded = _base32768_decode_raw(data)
+    return lzma.decompress(decoded, format=lzma.FORMAT_RAW, filters=lzma_filter_chain)
+
+def base32768_encode_object(obj):
     pickled = pickletools.optimize(pickle.dumps(obj, protocol=5))
     compressed = lzma.compress(pickled, format=lzma.FORMAT_RAW, filters=lzma_filter_chain)
-    return base32768_encode_bytes(compressed)
+    return _base32768_encode_raw(compressed)
 
-def base32768_decode(data):
-    decoded = base32768_decode_bytes(data)
+def base32768_decode_object(data):
+    decoded = _base32768_decode_raw(data)
     decompressed = lzma.decompress(decoded, format=lzma.FORMAT_RAW, filters=lzma_filter_chain)
     return pickle.loads(decompressed)
