@@ -18,7 +18,7 @@ class SystemModule(mod.Module):
     @mod.command(name='restart', hidden=True)
     @mod.is_owner()
     async def restart_cmd(self, ctx):
-        service = self.conf['systemd_service_name']
+        service = self.conf.systemd_service_name
         
         if not service:
             await ctx.add_success_reaction(False)
