@@ -1,33 +1,35 @@
+import typing
 import asyncio
 import re
 from datetime import datetime as dt, timezone as tz
 import logging
-import shelve
 
+import aiosqlite
 import discord.ext.commands as cmd
 from discord.ext.commands.view import StringView
 
-from .common import *
-from .module import get_module_class
+from . import module
+
 
 log = logging.getLogger('bot')
 asyncio.get_event_loop().set_exception_handler(lambda loop, ctx: log.error(ctx['message'], exc_info=ctx.get('exception')))
 
 
 class Gs6Ex(cmd.Bot):
-    def __init__(self, profile_name, config_dir):
+    class Config(module.Config):
+        active_modules: set[str] = set()
+        superusers: set[int] = set()
+
+    def __init__(self, credentials, profile_name, db_path):
         super().__init__(command_prefix='', description='', pm_help=False, help_attrs={})
         super().remove_command('help')
 
-        self.config_dir = config_dir
-        self.opened_shelves = {}
-        conf = shelve.open(str(self.config_dir / 'gs6ex'), writeback=True)
-
-        conf.setdefault('active_modules', set())
-        conf.sync()
-
-        self.conf = conf
         self.profile_name = profile_name
+        self.db_path = db_path
+        
+        self.db = None
+        self.conf = None
+        self.credentials = credentials
 
         self.first_ready = None
         self.last_ready = None
@@ -37,33 +39,6 @@ class Gs6Ex(cmd.Bot):
         self.command_dms_regex = None
 
         self.modules = {}
-
-    def __del__(self):
-        # Ensure shelf is closed
-        self.conf.close()
-
-    def load_module(self, name, persistent=True):
-        if name in self.modules:
-            self.unload_module(name, persistent=False)
-        
-        C = get_module_class(name)
-
-        instance = C(self)
-        self.modules[name] = instance
-        self.add_cog(instance)
-
-        if persistent:
-            self.conf['active_modules'].add(name)
-            self.conf.sync()
-
-    def unload_module(self, name, persistent=True):
-        self.remove_cog(name)
-        if name in self.modules:
-            del self.modules[name]
-        
-        if persistent:
-            self.conf['active_modules'].discard(name)
-            self.conf.sync()
 
     async def on_ready(self):
         log.info(f'Ready with Username {self.user.name!r}, ID {self.user.id!r}')
@@ -75,14 +50,73 @@ class Gs6Ex(cmd.Bot):
         self.command_dms_regex = re.compile(fr'(?s)^(?:<@!?{self.user.id}>)?(.*)$')
 
         if self.first_ready is None:
+            self.db = await aiosqlite.connect(self.db_path)
+
+            async with self.db.execute('PRAGMA user_version;') as cursor:
+                user_version, = await cursor.fetchone()
+                log.info(f'Schema version {user_version}')
+                if user_version == 0:
+                    log.warning(f'Initializing database...')
+                    await self.db.execute('''
+                        CREATE TABLE IF NOT EXISTS config (
+                            name TEXT PRIMARY KEY,
+                            data BLOB NOT NULL
+                        );''')
+                    await self.db.execute('PRAGMA user_version = 1;')
+                    await self.db.commit()
+
+            self.conf = self.Config(self.db, 'gs6ex')
+            await self.conf.load()
+            
             self.first_ready = now
             # The core module should always be loaded, so we can use eval to repair misconfigurations
-            for module in {'core', *self.conf['active_modules']}:
-                self.load_module(module)
+            for mod_name in {'core', *self.conf.active_modules}:
+                try:
+                    await self.load_module(mod_name)
+                except:
+                    log.error(f'Error loading module {mod_name}', exc_info=True)
 
     async def on_resumed(self):
         log.warning(f'Resumed')
         self.last_resume = dt.now(tz.utc)
+
+    async def close(self):
+        log.info('Closing...')
+        for mod in self.modules.copy():
+            await self.unload_module(mod, persistent=False)
+
+        if self.db:
+            await self.db.close()
+
+        await super().close()
+
+    async def load_module(self, name, persistent=True):
+        if name in self.modules:
+            await self.unload_module(name, persistent=False)
+        
+        C = module.get_module_class(name)
+
+        instance = C(self)
+        await instance._on_load()
+        self.modules[name] = instance
+        self.add_cog(instance)
+
+        if persistent:
+            self.conf.active_modules.add(name)
+            await self.conf.commit()
+
+    async def unload_module(self, name, persistent=True):
+        if name in self.modules:
+            self.remove_cog(name)
+            await self.modules[name]._on_unload()
+            del self.modules[name]
+        
+        if persistent:
+            self.conf.active_modules.discard(name)
+            await self.conf.commit()
+
+    async def is_superuser(self, user):
+        return user.id in self.conf.superusers or await self.is_owner(user)
 
     async def get_context(self, message, *, cls=cmd.Context):
         # This function is called internally by discord.py.
@@ -114,12 +148,3 @@ class Gs6Ex(cmd.Bot):
         ctx.invoked_with = invoker
         ctx.command = self.all_commands.get(invoker)
         return ctx
-
-    async def close(self):
-        log.info('Closing...')
-        for mod in self.modules.copy():
-            self.unload_module(mod, persistent=False)
-
-        self.conf.close()
-
-        await super().close()

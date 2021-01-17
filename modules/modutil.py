@@ -15,7 +15,7 @@ class ModUtilModule(mod.Module):
 
         try:
             for module in modules:
-                self.bot.load_module(module)
+                await self.bot.load_module(module)
             
         except Exception:
             await ctx.add_success_reaction(False)
@@ -31,7 +31,7 @@ class ModUtilModule(mod.Module):
 
         try:
             for module in modules:
-                self.bot.unload_module(module)
+                await self.bot.unload_module(module)
             
         except Exception:
             await ctx.add_success_reaction(False)

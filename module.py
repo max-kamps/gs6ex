@@ -1,13 +1,16 @@
+import sys
+import copy
+import pickle
+import typing
 import asyncio
-import importlib
 import inspect
 import logging
-import sys
-import shelve
+import importlib
 from datetime import datetime as dt, timezone as tz
 
 from discord.backoff import ExponentialBackoff
 from discord.ext import commands as cmd
+
 
 # Currently, the module system is just a wrapper over the
 # cog and extension system provided by the commands library, with some minor extensions.
@@ -35,39 +38,64 @@ def get_logger():
     return logging.getLogger(f'bot.{module_name}')
 
 
+
+class Config:
+    def __init__(self, db, name):
+        super().__setattr__('_db', db)
+        super().__setattr__('_name', name)
+        super().__setattr__('_props', copy.deepcopy(self._defaults))
+
+    async def load(self):
+        async with self._db.execute('SELECT data FROM config WHERE name = ?;', (self._name, )) as cursor:
+            if result := await cursor.fetchone():
+                data, = result
+                self._props.update(pickle.loads(data))
+
+    async def commit(self):
+        await self._db.execute('INSERT OR REPLACE INTO config (name, data) VALUES (?, ?);', (self._name, pickle.dumps(self._props)))
+        await self._db.commit()
+
+    def __getattr__(self, key):
+        return self._props[key]
+
+    def __setattr__(self, key, value):
+        self._props[key] = value
+
+    def __init_subclass__(cls, **kwargs):
+        type_hints = typing.get_type_hints(cls)
+        cls._defaults = {member: getattr(cls, member) for member in type_hints if hasattr(cls, member)}
+
+        for member in type_hints:
+            delattr(cls, member)
+        
+        super().__init_subclass__()
+
+
 class Module(cmd.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.conf = shelve.open(str(bot.config_dir / self.name), writeback=True)
+        if hasattr(self, 'Config'):
+            self.conf = self.Config(bot.db, self.name)
         self.log = logging.getLogger(f'bot.{self.name}')
         self._scheduled_tasks = set()
-        self._on_load()
 
-    def __del__(self):
-        # Ensure shelf is definitely closed
-        self.conf.close()
-
-    def _on_load(self):
+    async def _on_load(self):
+        if hasattr(self, 'conf'):
+            await self.conf.load()
+        
         if hasattr(self, 'on_load'):
-            self.on_load()
+            await self.on_load()
         
         self.log.info('Loaded!')
 
-    def _on_unload(self):
+    async def _on_unload(self):
+        if hasattr(self, 'on_unload'):
+            await self.on_unload()
+        
         for task in self._scheduled_tasks:
             task.cancel()
 
-        if hasattr(self, 'on_unload'):
-            self.on_unload()
-
-        self.conf.close()
-
         self.log.info('Unloaded!')
-
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-
-        cls.cog_unload = cls._on_unload
 
     def schedule_task(self, coro, *, in_delta=None, at_datetime=None):
         if in_delta is not None:
@@ -142,5 +170,11 @@ def get_module_class(name):
 def is_owner():
     async def pred(ctx):
         return await ctx.bot.is_owner(ctx.author)
+
+    return cmd.check(pred)
+
+def is_superuser():
+    async def pred(ctx):
+        return await ctx.bot.is_superuser(ctx.author)
 
     return cmd.check(pred)

@@ -1,5 +1,8 @@
 credentials.json
+
 .config
+.data
+*.lock
 
 .DS_Store
 *.sublime-*

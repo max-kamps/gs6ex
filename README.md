@@ -17,7 +17,7 @@ In direct messages the mention is optional.
 Use the `help` command to list available commands, or `_help` to list all commands, even hidden ones.
 
 ## Installation
-This bot requires Python 3.8 or higher.
+This bot requires Python 3.9 or higher.
 
 This is the recommended installation for Linux servers.
 We will create a new user for the bot, place all the code in that users home directory and then create a systemd user service to run the bot.
@@ -39,7 +39,7 @@ $ cd gs6ex
 $ git submodule add https://github.com/max-kamps/helper modules/helper
 
 # Create virtualenv, install dependencies
-$ python3.8 -m venv .
+$ python3.9 -m venv .
 $ source bin/activate
 $ python -m pip install -r requirements.txt
 $ deactivate

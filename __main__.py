@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import json
 import logging
@@ -25,7 +26,7 @@ def logger(name, level):
         hdlr.close()
 
 
-with logger('discord', logging.WARNING), logger('bot', logging.INFO) as log:
+with logger('discord', logging.WARNING), logger('twitch', logging.DEBUG), logger('bot', logging.DEBUG) as log:
     if len(sys.argv) != 2:
         sys.exit('Usage: python3 -m gs6ex <profile>')
     
@@ -46,8 +47,10 @@ with logger('discord', logging.WARNING), logger('bot', logging.INFO) as log:
     if chosen_profile not in credentials:
         sys.exit(f'Error: {chosen_profile!r} does not have any credentials!\nValid profiles:\n' + '\n'.join(f'  {n!r}' for n in credentials))
 
-    config_dir = (Path(__file__).parent / '.config' / chosen_profile).resolve()
-    os.makedirs(config_dir, exist_ok=True)
+    credentials = credentials[chosen_profile]
 
-    bot = gs6ex.Gs6Ex(chosen_profile, config_dir)
-    bot.run(credentials[chosen_profile])
+    db_path = (Path(__file__).parent / '.data' / chosen_profile / 'data.db').resolve()
+    os.makedirs(db_path.parent, exist_ok=True)
+
+    bot = gs6ex.Gs6Ex(credentials, chosen_profile, db_path)
+    bot.run(credentials['discord_token'])
