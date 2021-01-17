@@ -26,7 +26,7 @@ def logger(name, level):
         hdlr.close()
 
 
-with logger('discord', logging.WARNING), logger('twitch', logging.DEBUG), logger('bot', logging.DEBUG) as log:
+with logger('discord', logging.WARNING), logger('bot', logging.INFO) as log:
     if len(sys.argv) != 2:
         sys.exit('Usage: python3 -m gs6ex <profile>')
     
