@@ -5,6 +5,7 @@ from datetime import datetime as dt, timezone as tz
 import logging
 
 import aiosqlite
+import discord
 import discord.ext.commands as cmd
 from discord.ext.commands.view import StringView
 
@@ -21,7 +22,13 @@ class Gs6Ex(cmd.Bot):
         superusers: set[int] = set()
 
     def __init__(self, credentials, profile_name, db_path):
-        super().__init__(command_prefix='', description='', pm_help=False, help_attrs={})
+        intents = discord.Intents.default()
+        intents.typing = False
+        intents.presences = False
+        intents.voice_states = False
+        intents.members = True
+
+        super().__init__(command_prefix='', description='', pm_help=False, help_attrs={}, intents=intents)
         super().remove_command('help')
 
         self.profile_name = profile_name
